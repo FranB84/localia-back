@@ -1,0 +1,94 @@
+import { eq } from "drizzle-orm";
+import type { Request, Response } from "express";
+
+import db from "../db/connection";
+import { users } from "../db/schema";
+import { generateToken } from "../utils/jwt";
+import { comparePasswords, hashPassword } from "../utils/passwords";
+
+// POST /auth/register
+// Crea un nuevo usuario, hashea su contraseña, guarda en DB y devuelve JWT + datos del usuario
+export const register = async (req: Request, res: Response) => {
+	try {
+		const { name, email, password, role } = req.body;
+
+		const hashedPassword = await hashPassword(password);
+
+		const [user] = await db
+			.insert(users)
+			.values({
+				name,
+				email,
+				password: hashedPassword,
+				role,
+			})
+			.returning({
+				id: users.id,
+				name: users.name,
+				email: users.email,
+				role: users.role,
+				avatar: users.avatar,
+				location: users.location,
+				created_at: users.created_at,
+			});
+
+		const token = await generateToken({
+			id: user.id,
+			email: user.email,
+			role: user.role,
+		});
+
+		return res.status(201).json({
+			message: "User registered",
+			user,
+			token,
+		});
+	} catch (error) {
+		console.error("Error during registration", error);
+		return res.status(500).json({ message: "Failed to register" });
+	}
+};
+
+// POST /auth/login
+// Busca usuario por email, verifica contraseña y devuelve JWT + datos del usuario
+export const login = async (req: Request, res: Response) => {
+	try {
+		const { email, password } = req.body;
+
+		const user = await db.query.users.findFirst({
+			where: eq(users.email, email),
+		});
+
+		if (!user) {
+			return res.status(401).json({ message: "Invalid credentials" });
+		}
+
+		const isPasswordValid = await comparePasswords(password, user.password);
+
+		if (!isPasswordValid) {
+			return res.status(401).json({ message: "Invalid credentials" });
+		}
+
+		const token = await generateToken({
+			id: user.id,
+			email: user.email,
+			role: user.role,
+		});
+
+		return res.status(200).json({
+			message: "Login successful",
+			user: {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+				role: user.role,
+				avatar: user.avatar,
+				location: user.location,
+			},
+			token,
+		});
+	} catch (error) {
+		console.error("Error during login", error);
+		return res.status(500).json({ message: "Failed to login" });
+	}
+};
