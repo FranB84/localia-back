@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { eq, and, avg } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import db from "../db/connection";
 import { reviews } from "../db/schema";
@@ -23,12 +23,27 @@ export const getReviews = async (req: AuthenticatedRequest, res: Response) => {
             name: true,
             avatar: true,
             location: true,
+            created_at: true,
           },
         },
       },
       limit,
       offset,
     });
+
+    // Aplana la estructura para que calce con CommentProps del frontend
+    const formattedReviews = businessReviews.map((r) => ({
+      id: r.id,
+      avatar: r.user.avatar,
+      location: r.user.location,
+      name: r.user.name,
+      joinedDate: r.user.created_at,
+      rating: r.rating,
+      reviewDate: r.created_at,
+      title: r.title,
+      body: r.body,
+      helpfulCount: r.helpful,
+    }));
 
     // Calcula el rating promedio
     const allReviews = await db.query.reviews.findMany({
@@ -42,7 +57,7 @@ export const getReviews = async (req: AuthenticatedRequest, res: Response) => {
         : 0;
 
     return res.status(200).json({
-      reviews: businessReviews,
+      reviews: formattedReviews,
       avgRating: Math.round(avgRating * 10) / 10,
       page,
       limit,
@@ -76,34 +91,6 @@ export const createReview = async (req: AuthenticatedRequest, res: Response) => 
   } catch (error) {
     console.error("Error creating review", error);
     return res.status(500).json({ message: "Failed to create review" });
-  }
-};
-
-// DELETE /reviews/:reviewId
-// Elimina una review propia
-export const deleteReview = async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const reviewId = req.params.reviewId as string;
-
-    const deleted = await db
-      .delete(reviews)
-      .where(
-        and(
-          eq(reviews.id, reviewId),
-          eq(reviews.user_id, userId)
-        )
-      )
-      .returning();
-
-    if (deleted.length === 0) {
-      return res.status(404).json({ message: "Review not found" });
-    }
-
-    return res.status(200).json({ message: "Review deleted" });
-  } catch (error) {
-    console.error("Error deleting review", error);
-    return res.status(500).json({ message: "Failed to delete review" });
   }
 };
 

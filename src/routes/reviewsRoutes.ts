@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   getReviews,
   createReview,
-  deleteReview,
   markHelpful,
 } from "../controllers/reviewsController";
 import { authenticateToken } from "../middleware/auth";
@@ -54,7 +53,6 @@ router.delete(
   "/reviews/:reviewId",
   authenticateToken,
   validateParams(reviewIdSchema),
-  deleteReview
 );
 
 // POST /reviews/:reviewId/helpful
