@@ -4,13 +4,17 @@ import app from "./src/app";
 // import userRoutes from './src/routes/userRoutes';
 import authRoutes from "./src/routes/authRoutes";
 import reviewsRoutes from "./src/routes/reviewsRoutes";
+import businessRoutes from "./src/routes/businessesRoutes"
+import searchRoutes from "./src/routes/searchRoutes"
 
 //use routes
 // app.use('/api/users', userRoutes);
 
 app.use("/auth", authRoutes);
-app.use("/businesses", reviewsRoutes);
-// app.use("/businesses", businessRoutes);
+app.use("/reviews", reviewsRoutes);
+app.use("/api/businesses", businessRoutes);
+app.use("/api/search", searchRoutes);
+
 // app.use("/businesses", searchRoutes);   // /businesses/search y /categories van aquí
 
 // app.use("/users",      favoritesRoutes);

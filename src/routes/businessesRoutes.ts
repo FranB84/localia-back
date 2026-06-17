@@ -1,26 +1,32 @@
-// GET
-// /businesses
-// Lista paginada. Query params: page, limit, category, city.
+import { Router } from "express";
+import { authenticateToken } from "../middleware/auth";
+import { validateBody, validateParams, validateQuery } from "../middleware/validations";
+import { 
+    createBusinessBodySchema, 
+    updateBusinessBodySchema, 
+    idParamSchema, 
+    businessQuerySchema 
+} from "../controllers/businessesController"; // O donde tengas guardados tus esquemas de Zod
 
-// GET
-// /businesses/featured
-// Negocios destacados para Home y RecommendationSection (reemplaza mockBusinesses).
+// Importamos los controladores que manejan la lógica real
+import {
+    getBusinesses,
+    getFeaturedBusinesses,
+    getBusinessById,
+    createBusiness,
+    updateBusiness,
+    deleteBusiness
+} from "../controllers/businessesController";
 
-// GET
-// /businesses/:id
-// Detalle completo: info, rating promedio y coordenadas para el mapa Leaflet.
+const router = Router();
 
-// POST
-// /businesses
-// Crea negocio al finalizar el wizard. Body: name, category, type, description, phone, lat, lng, image_url.
-// solo seller
+// Cada ruta se vuelve una sola línea hiper legible:
+router.get("/", validateQuery(businessQuerySchema), getBusinesses);
+router.get("/featured", getFeaturedBusinesses);
+router.get("/:id", validateParams(idParamSchema), getBusinessById);
 
-// PUT
-// /businesses/:id
-// Edita un negocio propio.
-// solo seller
+router.post("/", authenticateToken, validateBody(createBusinessBodySchema), createBusiness);
+router.put("/:id", authenticateToken, validateParams(idParamSchema), validateBody(updateBusinessBodySchema), updateBusiness);
+router.delete("/:id", authenticateToken, validateParams(idParamSchema), deleteBusiness);
 
-// DELETE
-// /businesses/:id
-// Elimina negocio (seller dueño ).
-// solo seller
+export default router;
