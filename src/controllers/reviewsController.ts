@@ -94,6 +94,45 @@ export const createReview = async (req: AuthenticatedRequest, res: Response) => 
   }
 };
 
+// DELETE /reviews/:reviewId
+// Elimina una review. Permitido solo para el autor de la review o el dueño (owner) del negocio.
+export const deleteReview = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const reviewId = req.params.reviewId as string;
+
+    // Traemos la review junto con su negocio, para saber quién es el owner
+    const existing = await db.query.reviews.findFirst({
+      where: eq(reviews.id, reviewId),
+      with: {
+        business: {
+          columns: { owner_id: true },
+        },
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    const isReviewOwner = existing.user_id === userId;
+    const isBusinessOwner = existing.business.owner_id === userId;
+
+    if (!isReviewOwner && !isBusinessOwner) {
+      return res
+        .status(403)
+        .json({ message: "You are not allowed to delete this review" });
+    }
+
+    await db.delete(reviews).where(eq(reviews.id, reviewId));
+
+    return res.status(200).json({ message: "Review deleted" });
+  } catch (error) {
+    console.error("Error deleting review", error);
+    return res.status(500).json({ message: "Failed to delete review" });
+  }
+};
+
 // POST /reviews/:reviewId/helpful
 // Incrementa el contador helpful de una review
 export const markHelpful = async (req: AuthenticatedRequest, res: Response) => {

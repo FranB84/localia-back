@@ -8,15 +8,21 @@ const router = Router();
 
 // Schemas de validación
 const registerSchema = z.object({
-	name: z.string(),
-	email: z.string(),
-	password: z.string(),
+	name: z.string().min(1, "El nombre es requerido"),
+	email: z.email("Correo inválido"),
+	password: z
+	.string()
+		.min(8, "La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número")
+		.regex(
+			/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+			"La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número",
+		),
 	role: z.enum(["tourist", "seller", "guest"]),
 });
 
 const loginSchema = z.object({
-	email: z.string(),
-	password: z.string(),
+	email: z.email("Correo inválido"),
+	password: z.string().min(1, "La contraseña es requerida"),
 });
 
 // POST /auth/register

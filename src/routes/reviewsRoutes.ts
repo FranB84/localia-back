@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-
+console.log("Reviews routes loaded");
 import {
   getReviews,
   createReview,
