@@ -30,4 +30,4 @@ router.post("/", authenticateToken, uploadBusinessImage.single("image"), validat
 router.put("/:id", authenticateToken, validateParams(idParamSchema), uploadBusinessImage.single("image"), validateBody(updateBusinessBodySchema), updateBusiness);
 router.delete("/:id", authenticateToken, validateParams(idParamSchema), deleteBusiness);
 
-export default router;
+export default router;  

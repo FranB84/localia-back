@@ -11,7 +11,7 @@ import favoritesRoutes from "./src/routes/favoritesRoutes";
 
 app.use("/auth", authRoutes);
 app.use("/api/businesses", businessRoutes);
-app.use("/api/reviews", reviewsRoutes);
+app.use("/api/businesses", reviewsRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/users", favoritesRoutes);
 
