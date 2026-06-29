@@ -1,0 +1,70 @@
+import { Request, Response, NextFunction } from "express";
+import { and, eq, ilike, sql, desc } from "drizzle-orm";
+import { db } from "../db/connection";
+import { businesses, categoryEnum, reviews } from "../db/schema";
+
+//GET /api/search/businesses (Búsqueda Full-Text y filtros)
+export const searchBusinesses = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { q, category, type, city, page, limit } = req.query as any;
+		const offset = (page - 1) * limit;
+
+		const conditions = [];
+
+		if (category) conditions.push(eq(businesses.category, category));
+		if (type) conditions.push(eq(businesses.type, type));
+		if (city) conditions.push(ilike(businesses.city, `%${city}%`));
+
+		if (q) {
+			conditions.push(
+				sql`(${ilike(businesses.name, `%${q}%`)} OR 
+				      ${ilike(businesses.description, `%${q}%`)} OR 
+				      ${ilike(businesses.address, `%${q}%`)})`
+			);
+		}
+
+		const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+		const results = await db
+			.select({
+				id: businesses.id,
+				name: businesses.name,
+				description: businesses.description,
+				category: businesses.category,
+				type: businesses.type,
+				image_url: businesses.image_url,
+				city: businesses.city,
+				avgRating: sql<number>`coalesce(avg(${reviews.rating}), 0)::numeric(2,1)`,
+				totalReviews: sql<number>`count(${reviews.id})::int`,
+			})
+			.from(businesses)
+			.leftJoin(reviews, eq(businesses.id, reviews.business_id))
+			.where(whereClause)
+			.groupBy(businesses.id)
+			.orderBy(desc(businesses.created_at))
+			.limit(limit)
+			.offset(offset);
+
+		return res.json({
+			message: "Search query executed successfully",
+			meta: { page, limit, queryTerm: q },
+			data: results,
+		});
+	} catch (error) {
+		next(error);
+	}
+};
+
+// GET /api/search/categories (Lista dinámica de categorías)
+export const getCategories = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const categories = categoryEnum.enumValues;
+
+		return res.json({
+			message: "Categories list fetched successfully",
+			data: categories,
+		});
+	} catch (error) {
+		next(error);
+	}
+};

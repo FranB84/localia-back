@@ -1,31 +1,33 @@
-// GET
-// /businesses
-// Lista paginada. Query params: page, limit, category, city.
+import { Router } from "express";
+import { authenticateToken } from "../middleware/auth";
+import { uploadBusinessImage } from "../middleware/upload";
+import { validateBody, validateParams, validateQuery } from "../middleware/validations";
+import { 
+    createBusinessBodySchema, 
+    updateBusinessBodySchema, 
+    idParamSchema, 
+    businessQuerySchema 
+} from "../controllers/businessesController"; // O donde tengas guardados tus esquemas de Zod
 
+// Importamos los controladores que manejan la lógica real
+import {
+    getBusinesses,
+    getFeaturedBusinesses,
+    getBusinessById,
+    createBusiness,
+    updateBusiness,
+    deleteBusiness
+} from "../controllers/businessesController";
 
-// GET
-// /businesses/featured
-// Negocios destacados para Home y RecommendationSection (reemplaza mockBusinesses).
+const router = Router();
 
+// Cada ruta se vuelve una sola línea hiper legible:
+router.get("/", validateQuery(businessQuerySchema), getBusinesses);
+router.get("/featured", getFeaturedBusinesses);
+router.get("/:id", validateParams(idParamSchema), getBusinessById);
 
-// GET
-// /businesses/:id
-// Detalle completo: info, rating promedio y coordenadas para el mapa Leaflet.
+router.post("/", authenticateToken, uploadBusinessImage.single("image"), validateBody(createBusinessBodySchema), createBusiness);
+router.put("/:id", authenticateToken, validateParams(idParamSchema), uploadBusinessImage.single("image"), validateBody(updateBusinessBodySchema), updateBusiness);
+router.delete("/:id", authenticateToken, validateParams(idParamSchema), deleteBusiness);
 
-
-// POST
-// /businesses
-// Crea negocio al finalizar el wizard. Body: name, category, type, description, phone, lat, lng, image_url.
-// solo seller
-
-
-// PUT
-// /businesses/:id
-// Edita un negocio propio.
-// solo seller
-
-
-// DELETE
-// /businesses/:id
-// Elimina negocio (seller dueño o admin).
-// solo seller
+export default router;
