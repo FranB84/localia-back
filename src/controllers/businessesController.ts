@@ -135,9 +135,13 @@ export const createBusiness = async (req: any, res: Response, next: NextFunction
             return res.status(403).json({ message: "Access denied. Only sellers can create businesses." });
         }
 
+        const imageUrl = req.file
+			? `/uploads/businesses/${req.file.filename}`
+			: null;
+
         const newBusiness = await db
             .insert(businesses)
-            .values({ ...req.body, owner_id: req.user.id })
+            .values({ ...req.body, owner_id: req.user.id, image_url: imageUrl })
             .returning();
 
         return res.status(201).json({
@@ -168,9 +172,13 @@ export const updateBusiness = async (req: any, res: Response, next: NextFunction
             return res.status(403).json({ message: "Unauthorized. You do not own this business." });
         }
 
+        const imageUrl = req.file
+        ? `/uploads/businesses/${req.file.filename}`
+        : undefined;
+
         const updatedBusiness = await db
             .update(businesses)
-            .set({ ...req.body, updated_at: new Date() })
+            .set({ ...req.body, ...(imageUrl && {image_url: imageUrl}) ,updated_at: new Date() })
             .where(eq(businesses.id, id))
             .returning();
 

@@ -1,5 +1,6 @@
 import env from "./env";
 import app from "./src/app";
+
 // import created routes
 // import userRoutes from './src/routes/userRoutes';
 import authRoutes from "./src/routes/authRoutes";
@@ -10,7 +11,7 @@ import favoritesRoutes from "./src/routes/favoritesRoutes";
 
 app.use("/auth", authRoutes);
 app.use("/api/businesses", businessRoutes);
-app.use("/api/businesses", reviewsRoutes);
+app.use("/api/reviews", reviewsRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/users", favoritesRoutes);
 
