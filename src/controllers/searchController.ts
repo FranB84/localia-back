@@ -68,3 +68,50 @@ export const getCategories = async (req: Request, res: Response, next: NextFunct
 		next(error);
 	}
 };
+
+// GET /api/search/nearby (Negocios cercanos con suficientes reseñas)
+export const getNearbyBusinesses = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const { lat, lng, radius, minReviews, limit } = req.query as any;
+
+		const distanceExpr = sql<number>`
+			(6371 * acos(
+				LEAST(1.0, GREATEST(-1.0,
+					cos(radians(${lat})) * cos(radians(${businesses.lat}::float)) *
+					cos(radians(${businesses.lng}::float) - radians(${lng})) +
+					sin(radians(${lat})) * sin(radians(${businesses.lat}::float))
+				))
+			))
+		`;
+
+		const results = await db
+			.select({
+				id: businesses.id,
+				name: businesses.name,
+				description: businesses.description,
+				category: businesses.category,
+				type: businesses.type,
+				image_url: businesses.image_url,
+				city: businesses.city,
+				lat: businesses.lat,
+				lng: businesses.lng,
+				distance: distanceExpr.as("distance"),
+				avgRating: sql<number>`coalesce(avg(${reviews.rating}), 0)::numeric(2,1)`,
+				totalReviews: sql<number>`count(${reviews.id})::int`,
+			})
+			.from(businesses)
+			.leftJoin(reviews, eq(businesses.id, reviews.business_id))
+			.groupBy(businesses.id)
+			.having(sql`count(${reviews.id}) >= ${minReviews} AND ${distanceExpr} <= ${radius}`)
+			.orderBy(sql`distance ASC`)
+			.limit(limit);
+
+		return res.json({
+			message: "Nearby businesses with enough reviews fetched successfully",
+			meta: { lat, lng, radius, minReviews, limit },
+			data: results,
+		});
+	} catch (error) {
+		next(error);
+	}
+};
